@@ -1,0 +1,71 @@
+menu "Pong Game"
+
+    config PONG_GPIO_LEFT
+        int "Left button GPIO (key2)"
+        default 25
+        help
+            GPIO number for the left paddle button (key2). Set to -1 to disable.
+
+    config PONG_GPIO_RIGHT
+        int "Right button GPIO (BOOT)"
+        default 13
+        help
+            GPIO number for the right paddle button (BOOT). Usually GPIO0.
+
+    config PONG_GPIO_PAUSE
+        int "Pause button GPIO (toggle)"
+        default 0
+        help
+            GPIO for pause toggle. GPIO0 is BOOT; do not hold it low during reset.
+
+    config PONG_SCREEN_WIDTH
+        int "Screen width"
+        default 240
+
+    config PONG_SCREEN_HEIGHT
+        int "Screen height"
+        default 135
+
+    config PONG_PADDLE_HEIGHT
+        int "Paddle height"
+        default 24
+
+    config PONG_PADDLE_WIDTH
+        int "Paddle width"
+        default 4
+
+    config PONG_BALL_SIZE
+        int "Ball size"
+        default 4
+
+    config PONG_LCD_RST_GPIO
+        int "LCD reset GPIO (-1 = not used)"
+        default -1
+        help
+            Set to -1 to disable hardware reset (software reset only).
+
+    config PONG_LCD_OFFSET_X
+        int "LCD X offset"
+        default 0
+        help
+            Some 240x135 ST7789 panels need an X offset (often 40).
+
+    config PONG_LCD_OFFSET_Y
+        int "LCD Y offset"
+        default 0
+        help
+            Some 240x135 ST7789 panels need a Y offset (often 53).
+
+    config PONG_LCD_SWAP_XY
+        bool "LCD swap XY (rotate 90°)"
+        default y
+
+    config PONG_LCD_MIRROR_X
+        bool "LCD mirror X"
+        default y
+
+    config PONG_LCD_MIRROR_Y
+        bool "LCD mirror Y"
+        default n
+
+endmenu

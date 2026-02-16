@@ -1,0 +1,7 @@
+{
+    "idf.currentSetup": "C:\\Users\\kirch\\esp\\v5.3.4\\esp-idf",
+    "idf.customExtraVars": {
+        "IDF_TARGET": "esp32"
+    },
+    "idf.portWin": "COM10"
+}
