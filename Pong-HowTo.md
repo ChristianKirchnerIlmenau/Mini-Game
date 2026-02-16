@@ -5,7 +5,7 @@ Hallo! Das ist eine kurze Anleitung fuer dein Pong-Spiel.
 ## Was du brauchst
 - Das Display ist angeschlossen
 - Rechte Taste: D13 (gegen GND)
-- Linke Taste: D25 (gegen GND)
+- Linke Taste: D27 (gegen GND)
 - Start und Pause: BOOT-Taste (GPIO0)
 
 ## Starten
@@ -16,7 +16,7 @@ Hallo! Das ist eine kurze Anleitung fuer dein Pong-Spiel.
 ## Spielen
 - Bewege den Schlaeger mit den Tasten:
   - Rechts: D13
-  - Links: D25
+  - Links: D27
 - Triff den Ball mit dem Schlaeger.
 - Treffer = H (Hits)
 - Fehler = F (Failures)

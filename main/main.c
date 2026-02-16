@@ -44,6 +44,8 @@
 #define LCD_OFFSET_X CONFIG_PONG_LCD_OFFSET_X
 #define LCD_OFFSET_Y CONFIG_PONG_LCD_OFFSET_Y
 
+#define ENABLE_GPIO_SCANNER 0
+
 #ifdef CONFIG_PONG_LCD_SWAP_XY
 #define LCD_SWAP_XY true
 #else
@@ -95,6 +97,7 @@ static uint16_t *s_framebuffer = NULL;
 
 static void display_clear(uint16_t color);
 static void display_flush(void);
+static void gpio_scanner_run(void);
 
 static void display_init(void)
 {
@@ -231,6 +234,106 @@ static void buttons_init(void)
     };
 
     gpio_config(&io_conf);
+}
+
+static bool gpio_is_unsafe_for_scan(int gpio)
+{
+    // Skip flash, UART, and display pins used on this board.
+    if (gpio >= 6 && gpio <= 11) {
+        return true;
+    }
+    if (gpio == 1 || gpio == 3) {
+        return true;
+    }
+    if (gpio == LCD_MOSI || gpio == LCD_SCLK || gpio == LCD_CS || gpio == LCD_DC || gpio == LCD_BLK) {
+        return true;
+    }
+    if (gpio == LCD_RST) {
+        return true;
+    }
+    return false;
+}
+
+static bool gpio_is_valid_esp32(int gpio)
+{
+    switch (gpio) {
+        case 0:
+        case 2:
+        case 4:
+        case 5:
+        case 12:
+        case 13:
+        case 14:
+        case 15:
+        case 16:
+        case 17:
+        case 18:
+        case 19:
+        case 21:
+        case 22:
+        case 23:
+        case 25:
+        case 26:
+        case 27:
+        case 32:
+        case 33:
+        case 34:
+        case 35:
+        case 36:
+        case 37:
+        case 38:
+        case 39:
+            return true;
+        default:
+            return false;
+    }
+}
+
+static bool gpio_supports_pullup(int gpio)
+{
+    // GPIO34-39 are input-only and have no internal pull-ups.
+    return !(gpio >= 34 && gpio <= 39);
+}
+
+static void gpio_scanner_run(void)
+{
+    ESP_LOGI(TAG, "GPIO scanner: press a button to see the GPIO number");
+
+    int last_level[40];
+    for (int i = 0; i < 40; ++i) {
+        last_level[i] = 1;
+    }
+
+    for (int gpio = 0; gpio < 40; ++gpio) {
+        if (!gpio_is_valid_esp32(gpio) || gpio_is_unsafe_for_scan(gpio)) {
+            continue;
+        }
+        gpio_config_t io_conf = {
+            .intr_type = GPIO_INTR_DISABLE,
+            .mode = GPIO_MODE_INPUT,
+            .pin_bit_mask = 1ULL << gpio,
+            .pull_down_en = GPIO_PULLDOWN_DISABLE,
+            .pull_up_en = gpio_supports_pullup(gpio) ? GPIO_PULLUP_ENABLE : GPIO_PULLUP_DISABLE
+        };
+        gpio_config(&io_conf);
+        last_level[gpio] = gpio_get_level(gpio);
+    }
+
+    while (true) {
+        for (int gpio = 0; gpio < 40; ++gpio) {
+            if (!gpio_is_valid_esp32(gpio) || gpio_is_unsafe_for_scan(gpio)) {
+                continue;
+            }
+            int level = gpio_get_level(gpio);
+            if (level != last_level[gpio]) {
+                last_level[gpio] = level;
+                if (level == 0) {
+                    ESP_LOGI(TAG, "GPIO scanner: button press detected on GPIO %d", gpio);
+                }
+            }
+        }
+        vTaskDelay(pdMS_TO_TICKS(50));
+    }
 }
 
 static int clamp(int value, int min, int max)
@@ -549,6 +652,10 @@ static void render_start_screen(int highscore)
 void app_main(void)
 {
     ESP_LOGI(TAG, "Pong start");
+
+#if ENABLE_GPIO_SCANNER
+    gpio_scanner_run();
+#endif
 
     esp_err_t nvs_ret = nvs_flash_init();
     if (nvs_ret == ESP_ERR_NVS_NO_FREE_PAGES || nvs_ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {

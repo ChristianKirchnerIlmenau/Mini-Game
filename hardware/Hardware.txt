@@ -1,0 +1,26 @@
+Ideaspark® ESP32 Entwicklungsboard mit einem 2,9 cm ST7789 135X240 TFT LCD Bildschirm, Wifi+Bl Wireless Modul und CH340 Treiber mit USB Type-C für Arduino Micropython.
+TM-ESP32-114LCDNOSP
+
+Aufschrift Chip:
+ESP-WROOM-32
+
+Unternehmensname
+Shenzhenshiguangjiangkeji Co., Ltd.
+Store-Typ
+Unternehmer
+Adresse
+North side of the 3rd floor, Building 16, Xingwei Third Industrial Zone, Fenghuang Community, Fuyong Street
+Bao'an District
+518101
+Guangdong Province, Shenzhen
+China
+Handelsregister
+Staatliche Behörde für Marktregulierung
+Registrierungsnummer
+91440300359969539L
+E-Mail-Adresse
+379260472@qq.com
+Telefonnummer
++86 18823822400
+Selbstzertifizierung
+Dieser Store hat bestätigt, dass er alle geltenden Gesetze einhaltet und nur Produkte und Dienstleistungen anbieten wird, die den Richtlinien von Temu und den geltenden EU-Gesetzen entsprechen.

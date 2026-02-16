@@ -1,7 +1,7 @@
 {
     "version":            "1.2",
     "project_name":       "pong-esp32",
-    "project_version":    "1",
+    "project_version":    "22a7edb-dirty",
     "project_path":       "C:/Users/kirch/OneDrive/Git/Mini-Game",
     "idf_path":           "C:/Users/kirch/esp/v5.3.4/esp-idf",
     "build_dir":          "C:/Users/kirch/OneDrive/Git/Mini-Game/build",

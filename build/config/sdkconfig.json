@@ -474,7 +474,7 @@
     "PM_ENABLE": false,
     "PM_SLP_IRAM_OPT": false,
     "PONG_BALL_SIZE": 8,
-    "PONG_GPIO_LEFT": 25,
+    "PONG_GPIO_LEFT": 27,
     "PONG_GPIO_PAUSE": 0,
     "PONG_GPIO_RIGHT": 13,
     "PONG_LCD_MIRROR_X": true,

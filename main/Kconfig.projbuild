@@ -2,7 +2,7 @@ menu "Pong Game"
 
     config PONG_GPIO_LEFT
         int "Left button GPIO (key2)"
-        default 25
+        default 27
         help
             GPIO number for the left paddle button (key2). Set to -1 to disable.
 
