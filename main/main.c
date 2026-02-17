@@ -33,9 +33,10 @@
 #define BALL_SIZE CONFIG_PONG_BALL_SIZE
 
 #define BALL_BASE_SPEED 1
-#define BALL_SPEED_STEP_HITS 5
-#define BALL_MAX_SPEED 6
-#define FAIL_LIMIT 10
+#define BALL_SPEED_STEP_HITS 10
+#define BALL_SPEED_FACTOR 2
+#define BALL_MAX_SPEED 3
+#define MAX_LIVES 3
 
 #define GPIO_LEFT  CONFIG_PONG_GPIO_LEFT
 #define GPIO_RIGHT CONFIG_PONG_GPIO_RIGHT
@@ -504,6 +505,26 @@ static void draw_text(int x, int y, const char *text, int scale)
     }
 }
 
+static void draw_heart(int x, int y, int scale, bool filled)
+{
+    static const uint8_t heart_filled[7] = {
+        0x6C, 0xFE, 0xFE, 0xFE, 0x7C, 0x38, 0x10
+    };
+    static const uint8_t heart_outline[7] = {
+        0x6C, 0x92, 0x82, 0x44, 0x28, 0x10, 0x00
+    };
+
+    const uint8_t *bitmap = filled ? heart_filled : heart_outline;
+    for (int row = 0; row < 7; ++row) {
+        uint8_t bits = bitmap[row];
+        for (int col = 0; col < 8; ++col) {
+            if (bits & (1 << (7 - col))) {
+                display_draw_rect(x + col * scale, y + row * scale, scale, scale, COLOR_WHITE);
+            }
+        }
+    }
+}
+
 static bool button_update(button_t *btn, TickType_t now, int debounce_cycles)
 {
     if (btn->gpio < 0) {
@@ -555,7 +576,7 @@ static void game_reset(ball_t *ball, paddle_t *paddle, int *hits, int *misses)
 {
     paddle->x = SCREEN_W / 2 - PADDLE_W / 2;
     ball->x = SCREEN_W / 2;
-    ball->y = SCREEN_H / 2;
+    ball->y = 0;
     ball->vx = BALL_BASE_SPEED;
     ball->vy = BALL_BASE_SPEED;
     *hits = 0;
@@ -564,7 +585,8 @@ static void game_reset(ball_t *ball, paddle_t *paddle, int *hits, int *misses)
 
 static int ball_speed_for_hits(int hits)
 {
-    int speed = BALL_BASE_SPEED + hits / BALL_SPEED_STEP_HITS;
+    float factor = (float)BALL_SPEED_FACTOR / 10.0f;
+    int speed = BALL_BASE_SPEED + (int)((float)hits / BALL_SPEED_STEP_HITS * factor);
     if (speed > BALL_MAX_SPEED) {
         speed = BALL_MAX_SPEED;
     }
@@ -596,7 +618,7 @@ static void game_step(ball_t *ball, paddle_t *paddle, int *hits, int *misses)
         } else if (ball->y + BALL_SIZE >= SCREEN_H) {
             (*misses)++;
             ball->x = SCREEN_W / 2;
-            ball->y = SCREEN_H / 2;
+            ball->y = 0;
             int speed = ball_speed_for_hits(0);
             ball->vx = (ball->vx > 0) ? -speed : speed;
             ball->vy = speed;
@@ -614,12 +636,26 @@ static void game_render(const ball_t *ball, const paddle_t *paddle, int hits, in
 
     char buf[32];
     if (show_highscore) {
-        snprintf(buf, sizeof(buf), "HISCORE:%d H:%d F:%d", highscore, hits, misses);
+        snprintf(buf, sizeof(buf), "HISCORE:%d H:%d", highscore, hits);
     } else {
-        snprintf(buf, sizeof(buf), "H:%d F:%d", hits, misses);
+        snprintf(buf, sizeof(buf), "H:%d", hits);
     }
     int hud_scale = show_highscore ? 1 : 2;
     draw_text(2, 2, buf, hud_scale);
+
+    int lives = MAX_LIVES - misses;
+    if (lives < 0) {
+        lives = 0;
+    }
+    int heart_scale = 1;
+    int heart_w = 8 * heart_scale;
+    int heart_spacing = 2;
+    int total_w = MAX_LIVES * heart_w + (MAX_LIVES - 1) * heart_spacing;
+    int hearts_x = SCREEN_W - total_w - 2;
+    int hearts_y = 2;
+    for (int i = 0; i < MAX_LIVES; ++i) {
+        draw_heart(hearts_x + i * (heart_w + heart_spacing), hearts_y, heart_scale, i < lives);
+    }
 
     if (paused) {
         draw_text((SCREEN_W / 2) - 20, (SCREEN_H / 2) - 4, "PAUSE", 1);
@@ -628,15 +664,21 @@ static void game_render(const ball_t *ball, const paddle_t *paddle, int hits, in
     display_flush();
 }
 
-static void render_start_screen(int highscore)
+static void render_start_screen(int highscore, int last_score)
 {
     display_clear(COLOR_BLACK);
 
-    const char *title = "PONG";
-    int title_scale = 3;
-    int title_w = (int)strlen(title) * ((8 * title_scale) + title_scale);
-    int title_x = (SCREEN_W - title_w) / 2;
-    draw_text(title_x, 20, title, title_scale);
+    const char *title_line1 = "Carl's";
+    const char *title_line2 = "Pong";
+    int title_scale = 2;
+    int title_w1 = (int)strlen(title_line1) * ((8 * title_scale) + title_scale);
+    int title_w2 = (int)strlen(title_line2) * ((8 * title_scale) + title_scale);
+    int title_x1 = (SCREEN_W - title_w1) / 2;
+    int title_x2 = (SCREEN_W - title_w2) / 2;
+    int title_y1 = 16;
+    int title_y2 = title_y1 + (8 * title_scale) + 4;
+    draw_text(title_x1, title_y1, title_line1, title_scale);
+    draw_text(title_x2, title_y2, title_line2, title_scale);
 
     char buf[32];
     snprintf(buf, sizeof(buf), "HIGH:%d", highscore);
@@ -644,6 +686,15 @@ static void render_start_screen(int highscore)
     int info_w = (int)strlen(buf) * ((8 * info_scale) + info_scale);
     int info_x = (SCREEN_W - info_w) / 2;
     draw_text(info_x, 70, buf, info_scale);
+
+    if (last_score >= 0) {
+        snprintf(buf, sizeof(buf), "LETZTE:%d", last_score);
+        int last_scale = 1;
+        int last_w = (int)strlen(buf) * ((8 * last_scale) + last_scale);
+        int last_x = (SCREEN_W - last_w) / 2;
+        int last_y = 70 + (8 * info_scale) + 6;
+        draw_text(last_x, last_y, buf, last_scale);
+    }
 
     draw_text(20, SCREEN_H - 20, "PRESS BOOT", 1);
     display_flush();
@@ -682,6 +733,7 @@ void app_main(void)
     const TickType_t frame_delay = pdMS_TO_TICKS(16);
     const int debounce_cycles = 3;
     const TickType_t long_press_ms = pdMS_TO_TICKS(800);
+    const TickType_t reset_hold_ms = pdMS_TO_TICKS(3000);
 
     button_t left_btn = { .gpio = GPIO_LEFT, .stable_level = 1, .last_level = 1, .stable_count = 0, .pressed_since = 0 };
     button_t right_btn = { .gpio = GPIO_RIGHT, .stable_level = 1, .last_level = 1, .stable_count = 0, .pressed_since = 0 };
@@ -690,7 +742,11 @@ void app_main(void)
     int hits = 0;
     int misses = 0;
     int highscore = nvs_load_highscore();
+    int last_score = -1;
     bool show_highscore = false;
+    TickType_t both_pressed_since = 0;
+    bool both_pressed_active = false;
+    bool highscore_reset_done = false;
     game_state_t state = STATE_START;
 
     if (GPIO_PAUSE == 0) {
@@ -725,7 +781,21 @@ void app_main(void)
         paddle.x = clamp(paddle.x, 0, SCREEN_W - PADDLE_W);
 
         if (state == STATE_START) {
-            render_start_screen(highscore);
+            if (left_pressed && right_pressed) {
+                if (!both_pressed_active) {
+                    both_pressed_active = true;
+                    both_pressed_since = now;
+                    highscore_reset_done = false;
+                }
+                if (!highscore_reset_done && (now - both_pressed_since) >= reset_hold_ms) {
+                    highscore = 0;
+                    nvs_save_highscore(highscore);
+                    highscore_reset_done = true;
+                }
+            } else {
+                both_pressed_active = false;
+            }
+            render_start_screen(highscore, last_score);
             vTaskDelay(frame_delay);
             continue;
         }
@@ -744,7 +814,8 @@ void app_main(void)
                 highscore = hits;
                 nvs_save_highscore(highscore);
             }
-            if (misses >= FAIL_LIMIT) {
+            if (misses >= MAX_LIVES) {
+                last_score = hits;
                 state = STATE_START;
                 game_reset(&ball, &paddle, &hits, &misses);
                 vTaskDelay(frame_delay);
